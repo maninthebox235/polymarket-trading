@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Wallet Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>PM Tracker</h1>
+                <span class="subtitle">Wallet Analytics</span>
+            </div>
+
+            <nav class="nav">
+                <a href="#" class="nav-item active" data-view="analyze">
+                    <span class="icon">📊</span>
+                    Analyze Wallet
+                </a>
+                <a href="#" class="nav-item" data-view="compare">
+                    <span class="icon">⚖️</span>
+                    Compare
+                </a>
+                <a href="#" class="nav-item" data-view="momentum">
+                    <span class="icon">📡</span>
+                    Live Momentum
+                </a>
+                <a href="#" class="nav-item" data-view="gabagool">
+                    <span class="icon">🏆</span>
+                    gabagool22
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="dot"></span>
+                    <span id="connection-status">Ready</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Analyze View -->
+            <section id="analyze-view" class="view active">
+                <header class="view-header">
+                    <h2>Analyze Wallet</h2>
+                    <p>Track positions, P&L, and strategy patterns</p>
+                </header>
+
+                <div class="search-box">
+                    <input type="text" id="wallet-input" placeholder="Enter wallet address or username (e.g., gabagool22)">
+                    <button id="analyze-btn" class="btn btn-primary">Analyze</button>
+                </div>
+
+                <div id="analysis-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <span>Fetching wallet data...</span>
+                </div>
+
+                <div id="analysis-error" class="error-message hidden"></div>
+
+                <div id="analysis-results" class="results hidden">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Total P&L</span>
+                            <span class="stat-value" id="stat-pnl">$0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Win Rate</span>
+                            <span class="stat-value" id="stat-winrate">0%</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Total Trades</span>
+                            <span class="stat-value" id="stat-trades">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Avg Position</span>
+                            <span class="stat-value" id="stat-avgsize">$0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">ROI</span>
+                            <span class="stat-value" id="stat-roi">0%</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Strategy</span>
+                            <span class="stat-value" id="stat-strategy">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Equity Curve -->
+                    <div class="chart-container">
+                        <h3>Equity Curve</h3>
+                        <canvas id="equity-chart"></canvas>
+                        <p class="chart-description" id="curve-quality"></p>
+                    </div>
+
+                    <!-- gabagool22 Comparison -->
+                    <div class="comparison-section">
+                        <h3>Similarity to gabagool22</h3>
+                        <div id="similarity-bars"></div>
+                    </div>
+
+                    <!-- Trade Breakdown -->
+                    <div class="breakdown-section">
+                        <h3>Trade Breakdown</h3>
+                        <div class="breakdown-grid">
+                            <div class="breakdown-item">
+                                <span class="win">Wins</span>
+                                <span id="breakdown-wins">0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="loss">Losses</span>
+                                <span id="breakdown-losses">0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="pending">Pending</span>
+                                <span id="breakdown-pending">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Compare View -->
+            <section id="compare-view" class="view hidden">
+                <header class="view-header">
+                    <h2>Compare Wallets</h2>
+                    <p>Side-by-side wallet comparison</p>
+                </header>
+
+                <div class="compare-inputs">
+                    <div class="input-group">
+                        <input type="text" class="compare-input" placeholder="Wallet 1">
+                        <input type="text" class="compare-input" placeholder="Wallet 2">
+                        <input type="text" class="compare-input" placeholder="Wallet 3 (optional)">
+                    </div>
+                    <button id="compare-btn" class="btn btn-primary">Compare</button>
+                </div>
+
+                <div id="compare-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <span>Comparing wallets...</span>
+                </div>
+
+                <div id="compare-results" class="compare-table-container hidden">
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compare-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Momentum View -->
+            <section id="momentum-view" class="view hidden">
+                <header class="view-header">
+                    <h2>Live Momentum Monitor</h2>
+                    <p>Real-time BTC/ETH spot price signals</p>
+                </header>
+
+                <div class="momentum-controls">
+                    <button id="start-momentum" class="btn btn-primary">Start Monitoring</button>
+                    <button id="stop-momentum" class="btn btn-secondary hidden">Stop</button>
+                </div>
+
+                <div class="price-cards">
+                    <div class="price-card btc">
+                        <span class="asset-icon">₿</span>
+                        <div class="price-info">
+                            <span class="asset-name">Bitcoin</span>
+                            <span class="price" id="btc-price">--</span>
+                        </div>
+                    </div>
+                    <div class="price-card eth">
+                        <span class="asset-icon">Ξ</span>
+                        <div class="price-info">
+                            <span class="asset-name">Ethereum</span>
+                            <span class="price" id="eth-price">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="signals-container">
+                    <h3>Momentum Signals</h3>
+                    <div id="signals-list" class="signals-list">
+                        <div class="no-signals">No signals yet. Start monitoring to detect momentum.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- gabagool22 View -->
+            <section id="gabagool-view" class="view hidden">
+                <header class="view-header">
+                    <h2>The gabagool22 Strategy</h2>
+                    <p>The quietest $457K winner on Polymarket</p>
+                </header>
+
+                <div class="gabagool-content">
+                    <div class="quote-box">
+                        <blockquote>
+                            "I looked at the equity curve and honestly felt something. Not excitement.
+                            Something closer to respect. A straight line climbing for two months."
+                        </blockquote>
+                    </div>
+
+                    <div class="strategy-breakdown">
+                        <h3>The Strategy: Momentum Reading</h3>
+                        <div class="strategy-steps">
+                            <div class="step">
+                                <span class="step-num">1</span>
+                                <div class="step-content">
+                                    <h4>Watch Spot Prices</h4>
+                                    <p>Monitor BTC and ETH on Binance and Coinbase for sudden moves.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">2</span>
+                                <div class="step-content">
+                                    <h4>Detect the Lag</h4>
+                                    <p>Polymarket 15-minute window odds lag behind by seconds.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">3</span>
+                                <div class="step-content">
+                                    <h4>Enter Before Adjustment</h4>
+                                    <p>Buy the side that should win before the market catches up. Entry 40-50¢.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">4</span>
+                                <div class="step-content">
+                                    <h4>Collect $1 Per Share</h4>
+                                    <p>Resolution pays $1. Small edge, but real. Repeat.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sizing-section">
+                        <h3>The Real Edge: Position Sizing</h3>
+                        <div class="sizing-comparison">
+                            <div class="sizing-item other">
+                                <span class="label">Other Wallets</span>
+                                <span class="size">$10K - $40K</span>
+                                <p>Fewer wins needed. But one bad streak and the curve dips hard.</p>
+                            </div>
+                            <div class="sizing-item gabagool">
+                                <span class="label">gabagool22</span>
+                                <span class="size">$1,600 avg</span>
+                                <p>More entries. More data. More chances for edge to play out.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-box">
+                        <div class="result-stat">
+                            <span class="value">$457K</span>
+                            <span class="label">Total Profit</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="value">2 months</span>
+                            <span class="label">Time Period</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="value">Straight Line</span>
+                            <span class="label">Equity Curve</span>
+                        </div>
+                    </div>
+
+                    <div class="final-quote">
+                        <p>We want the hero moment. The screenshot. The trade that makes the thread.</p>
+                        <p><strong>gabagool22 never had one. He just made $457K without it.</strong></p>
+                    </div>
+
+                    <a href="https://polymarket.com/@gabagool22" target="_blank" class="btn btn-primary">
+                        View Profile on Polymarket →
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

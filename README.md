@@ -39,7 +39,25 @@ cp .env.example .env
 
 ## Usage
 
-### Analyze a Wallet
+### Web UI
+
+Launch the web interface for a visual dashboard:
+
+```bash
+# Start the web server
+uvicorn web.app:app --reload
+
+# Open in browser
+# http://localhost:8000
+```
+
+Features:
+- **Analyze Wallet** - Enter any wallet address or username to see stats, equity curve, and strategy breakdown
+- **Compare Wallets** - Side-by-side comparison of up to 5 wallets
+- **Live Momentum** - Real-time BTC/ETH price feeds with momentum signal detection
+- **gabagool22** - Deep dive into the $457K strategy
+
+### CLI: Analyze a Wallet
 
 ```bash
 # Basic analysis
@@ -89,14 +107,21 @@ polymarket-trading/
 ├── requirements.txt        # Python dependencies
 ├── .env.example           # Environment template
 ├── .gitignore
-└── src/
-    ├── __init__.py
-    ├── config.py          # Configuration management
-    ├── models.py          # Data models (Position, WalletStats, etc.)
-    ├── wallet_tracker.py  # Core wallet tracking
-    ├── momentum_detector.py # Spot price momentum detection
-    ├── strategy_analyzer.py # Strategy classification
-    └── equity_curve.py    # Performance tracking
+├── src/
+│   ├── __init__.py
+│   ├── config.py          # Configuration management
+│   ├── models.py          # Data models (Position, WalletStats, etc.)
+│   ├── wallet_tracker.py  # Core wallet tracking
+│   ├── momentum_detector.py # Spot price momentum detection
+│   ├── strategy_analyzer.py # Strategy classification
+│   └── equity_curve.py    # Performance tracking
+└── web/
+    ├── app.py             # FastAPI application
+    ├── templates/
+    │   └── index.html     # Main dashboard template
+    └── static/
+        ├── css/style.css  # Dark theme styles
+        └── js/app.js      # Frontend JavaScript
 ```
 
 ## Key Features
