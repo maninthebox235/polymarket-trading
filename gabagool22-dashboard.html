@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Wallet Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a24;
+            --bg-card: #16161f;
+            --border-color: #2a2a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --btc-color: #f7931a;
+            --eth-color: #627eea;
+            --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .app { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 240px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+        .logo { padding: 24px; border-bottom: 1px solid var(--border-color); }
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo .subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        .nav { padding: 16px 12px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; color: var(--text-secondary);
+            text-decoration: none; border-radius: var(--radius);
+            transition: all 0.2s; margin-bottom: 4px; cursor: pointer;
+        }
+        .nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            color: var(--accent-primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .nav-item .icon { font-size: 1.25rem; }
+        .main { flex: 1; margin-left: 240px; padding: 32px; max-width: 1200px; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .view-header { margin-bottom: 32px; }
+        .view-header h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+        .view-header p { color: var(--text-secondary); }
+
+        .quote-box { margin-bottom: 40px; }
+        .quote-box blockquote {
+            font-size: 1.25rem; font-style: italic; color: var(--text-secondary);
+            padding-left: 24px; border-left: 3px solid var(--accent-primary);
+        }
+        .strategy-breakdown { margin-bottom: 40px; }
+        .strategy-breakdown h3 { margin-bottom: 24px; }
+        .strategy-steps { display: flex; flex-direction: column; gap: 16px; }
+        .step {
+            display: flex; gap: 20px; padding: 20px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+        .step-num {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-weight: 700; flex-shrink: 0;
+        }
+        .step-content h4 { margin-bottom: 8px; }
+        .step-content p { color: var(--text-secondary); font-size: 0.9375rem; }
+
+        .sizing-section { margin-bottom: 40px; }
+        .sizing-section h3 { margin-bottom: 24px; }
+        .sizing-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .sizing-item { padding: 24px; border-radius: var(--radius-lg); text-align: center; }
+        .sizing-item.other { background: var(--bg-tertiary); border: 1px solid var(--border-color); }
+        .sizing-item.gabagool {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .sizing-item .label { display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 8px; }
+        .sizing-item .size { display: block; font-size: 1.75rem; font-weight: 700; font-family: var(--font-mono); margin-bottom: 12px; }
+        .sizing-item.gabagool .size { color: var(--accent-primary); }
+        .sizing-item p { font-size: 0.875rem; color: var(--text-secondary); }
+
+        .result-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+        .result-stat {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 24px; text-align: center;
+        }
+        .result-stat .value {
+            display: block; font-size: 2rem; font-weight: 700;
+            font-family: var(--font-mono); color: var(--success); margin-bottom: 8px;
+        }
+        .result-stat .label { font-size: 0.875rem; color: var(--text-muted); }
+
+        .final-quote {
+            background: var(--bg-tertiary); border-radius: var(--radius-lg);
+            padding: 32px; margin-bottom: 32px; text-align: center;
+        }
+        .final-quote p { font-size: 1.125rem; margin-bottom: 12px; color: var(--text-secondary); }
+        .final-quote p:last-child { color: var(--text-primary); margin-bottom: 0; }
+
+        .btn {
+            padding: 14px 28px; border: none; border-radius: var(--radius);
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            text-decoration: none; display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .stat-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 20px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .stat-label { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; font-family: var(--font-mono); }
+        .stat-value.positive { color: var(--success); }
+
+        .chart-container {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px;
+        }
+        .chart-container h3 { font-size: 1.125rem; margin-bottom: 16px; }
+        .chart-container canvas { max-height: 300px; }
+
+        .info-box {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px;
+        }
+        .info-box h3 { margin-bottom: 16px; color: var(--accent-primary); }
+        .info-box ul { list-style: none; }
+        .info-box li { padding: 8px 0; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+        .info-box li:last-child { border-bottom: none; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 64px; }
+            .sidebar .logo h1, .sidebar .logo .subtitle, .sidebar .nav-item span:not(.icon) { display: none; }
+            .nav-item { justify-content: center; padding: 16px; }
+            .main { margin-left: 64px; padding: 16px; }
+            .sizing-comparison, .result-box { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>PM Tracker</h1>
+                <span class="subtitle">Wallet Analytics</span>
+            </div>
+            <nav class="nav">
+                <a class="nav-item active" data-view="gabagool"><span class="icon">🏆</span> gabagool22</a>
+                <a class="nav-item" data-view="stats"><span class="icon">📊</span> Strategy Stats</a>
+                <a class="nav-item" data-view="about"><span class="icon">📡</span> How It Works</a>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <!-- gabagool22 View -->
+            <section id="gabagool-view" class="view active">
+                <header class="view-header">
+                    <h2>The gabagool22 Strategy</h2>
+                    <p>The quietest $457K winner on Polymarket</p>
+                </header>
+
+                <div class="gabagool-content">
+                    <div class="quote-box">
+                        <blockquote>
+                            "I looked at the equity curve and honestly felt something. Not excitement.
+                            Something closer to respect. A straight line climbing for two months."
+                        </blockquote>
+                    </div>
+
+                    <div class="strategy-breakdown">
+                        <h3>The Strategy: Momentum Reading</h3>
+                        <div class="strategy-steps">
+                            <div class="step">
+                                <span class="step-num">1</span>
+                                <div class="step-content">
+                                    <h4>Watch Spot Prices</h4>
+                                    <p>Monitor BTC and ETH on Binance and Coinbase for sudden moves.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">2</span>
+                                <div class="step-content">
+                                    <h4>Detect the Lag</h4>
+                                    <p>Polymarket 15-minute window odds lag behind by seconds.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">3</span>
+                                <div class="step-content">
+                                    <h4>Enter Before Adjustment</h4>
+                                    <p>Buy the side that should win before the market catches up. Entry 40-50¢.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">4</span>
+                                <div class="step-content">
+                                    <h4>Collect $1 Per Share</h4>
+                                    <p>Resolution pays $1. Small edge, but real. Repeat.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sizing-section">
+                        <h3>The Real Edge: Position Sizing</h3>
+                        <div class="sizing-comparison">
+                            <div class="sizing-item other">
+                                <span class="label">Other Wallets</span>
+                                <span class="size">$10K - $40K</span>
+                                <p>Fewer wins needed. But one bad streak and the curve dips hard.</p>
+                            </div>
+                            <div class="sizing-item gabagool">
+                                <span class="label">gabagool22</span>
+                                <span class="size">$1,600 avg</span>
+                                <p>More entries. More data. More chances for edge to play out.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-box">
+                        <div class="result-stat">
+                            <span class="value">$457K</span>
+                            <span class="label">Total Profit</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="value">2 months</span>
+                            <span class="label">Time Period</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="value">Straight Line</span>
+                            <span class="label">Equity Curve</span>
+                        </div>
+                    </div>
+
+                    <div class="final-quote">
+                        <p>We want the hero moment. The screenshot. The trade that makes the thread.</p>
+                        <p><strong>gabagool22 never had one. He just made $457K without it.</strong></p>
+                    </div>
+
+                    <a href="https://polymarket.com/@gabagool22" target="_blank" class="btn btn-primary">
+                        View Profile on Polymarket →
+                    </a>
+                </div>
+            </section>
+
+            <!-- Stats View -->
+            <section id="stats-view" class="view">
+                <header class="view-header">
+                    <h2>Strategy Statistics</h2>
+                    <p>gabagool22 by the numbers</p>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Total P&L</span>
+                        <span class="stat-value positive">$457,000</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Avg Position</span>
+                        <span class="stat-value">$1,600</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Entry Price</span>
+                        <span class="stat-value">40-50¢</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Resolution</span>
+                        <span class="stat-value">$1.00</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Markets</span>
+                        <span class="stat-value">BTC/ETH</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Window</span>
+                        <span class="stat-value">15 min</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Simulated Equity Curve</h3>
+                    <canvas id="equity-chart"></canvas>
+                </div>
+
+                <div class="info-box">
+                    <h3>Key Insights</h3>
+                    <ul>
+                        <li>📈 Small consistent sizing ($1,600) vs whale sizing ($10K-$40K)</li>
+                        <li>🎯 More entries = more chances for edge to play out</li>
+                        <li>🛡️ Less damage when something misses</li>
+                        <li>📊 Straight line equity curve for two months</li>
+                        <li>🤫 No hero moments, just consistent profits</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- About View -->
+            <section id="about-view" class="view">
+                <header class="view-header">
+                    <h2>How Momentum Reading Works</h2>
+                    <p>The edge gabagool22 exploits</p>
+                </header>
+
+                <div class="info-box">
+                    <h3>The Lag</h3>
+                    <ul>
+                        <li>When BTC/ETH moves on Binance or Coinbase, spot price updates instantly</li>
+                        <li>Polymarket 15-minute window odds take seconds to adjust</li>
+                        <li>That gap is the edge - enter before the market catches up</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3>The Math</h3>
+                    <ul>
+                        <li>Entry: 40-50¢ per share</li>
+                        <li>Win payout: $1.00 per share</li>
+                        <li>ROI per winning trade: 100-150%</li>
+                        <li>Even 55% win rate = significant edge</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3>Why Small Sizing Works</h3>
+                    <ul>
+                        <li>$1,600 average vs $10K-$40K whales</li>
+                        <li>5x more trades in same time window</li>
+                        <li>Law of large numbers kicks in faster</li>
+                        <li>Single loss doesn't wreck the curve</li>
+                        <li>Consistent compounding beats big swings</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3>Tools Used</h3>
+                    <ul>
+                        <li>Binance WebSocket for BTC/ETH spot prices</li>
+                        <li>Coinbase WebSocket as secondary feed</li>
+                        <li>Polymarket API for 15-minute window odds</li>
+                        <li>Automated detection of momentum signals</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const view = item.dataset.view;
+
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(view + '-view').classList.add('active');
+
+                if (view === 'stats') renderChart();
+            });
+        });
+
+        // Chart
+        function renderChart() {
+            const ctx = document.getElementById('equity-chart');
+            if (!ctx) return;
+
+            // Generate simulated equity curve (straight line with small variance)
+            const days = 60;
+            const labels = [];
+            const data = [];
+            let cumulative = 0;
+
+            for (let i = 0; i < days; i++) {
+                const date = new Date(2024, 9, 1 + i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+                // ~$7,600/day average with small variance
+                const dailyPnl = 7600 + (Math.random() - 0.5) * 2000;
+                cumulative += dailyPnl;
+                data.push(cumulative);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Cumulative P&L',
+                        data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#606070', maxTicksLimit: 8 } },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: {
+                                color: '#606070',
+                                callback: v => '$' + (v/1000).toFixed(0) + 'K'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
