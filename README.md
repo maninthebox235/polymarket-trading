@@ -81,6 +81,39 @@ python main.py export gabagool22 -o gabagool22_positions.json
 python main.py gabagool
 ```
 
+## OpenBB Integration
+
+This project integrates with [OpenBB](https://openbb.co/) - an open-source financial data platform - for enhanced market data and backtesting capabilities.
+
+### OpenBB Commands
+
+```bash
+# Show current crypto market summary
+python main.py openbb market
+
+# Fetch historical price data
+python main.py openbb history btc --days 30 --interval 1h
+
+# Backtest momentum strategy on historical data
+python main.py openbb backtest btc --days 30 --threshold 0.15
+
+# Monitor momentum using OpenBB (polling-based alternative to WebSockets)
+python main.py openbb monitor --threshold 0.15 --interval 10
+```
+
+### Data Providers
+
+OpenBB supports multiple data providers:
+- **yfinance** (default) - Free, no API key required
+- **fmp** - Financial Modeling Prep (API key required)
+- **polygon** - Polygon.io (API key required)
+- **tiingo** - Tiingo (API key required)
+
+Use `--provider` flag to specify:
+```bash
+python main.py openbb history btc --provider polygon
+```
+
 ## Project Structure
 
 ```
@@ -96,7 +129,8 @@ polymarket-trading/
     ├── wallet_tracker.py  # Core wallet tracking
     ├── momentum_detector.py # Spot price momentum detection
     ├── strategy_analyzer.py # Strategy classification
-    └── equity_curve.py    # Performance tracking
+    ├── equity_curve.py    # Performance tracking
+    └── openbb_provider.py # OpenBB data provider integration
 ```
 
 ## Key Features
@@ -112,6 +146,12 @@ polymarket-trading/
 - Detect significant price moves within 15-second windows
 - Calculate signal strength and direction
 - Identify potential PM lag opportunities
+
+### OpenBB Integration
+- Historical BTC/ETH price data from multiple providers
+- Strategy backtesting on historical data
+- Polling-based momentum monitoring (WebSocket alternative)
+- Multi-provider data aggregation (yfinance, FMP, Polygon, Tiingo)
 
 ### Strategy Analysis
 - Classify strategies: momentum_reading, arbitrage, whale_accumulation

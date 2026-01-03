@@ -26,6 +26,21 @@ class SpotFeedConfig(BaseModel):
     coinbase_ws_url: str = "wss://ws-feed.exchange.coinbase.com"
 
 
+class OpenBBConfig(BaseModel):
+    """OpenBB Platform configuration."""
+
+    # Default provider for crypto data (yfinance is free, no API key needed)
+    default_provider: str = "yfinance"
+    # API keys for premium providers (optional)
+    fmp_api_key: Optional[str] = None
+    polygon_api_key: Optional[str] = None
+    tiingo_api_key: Optional[str] = None
+    # Polling interval for OpenBB momentum monitor (seconds)
+    poll_interval: int = 10
+    # Enable OpenBB as data source
+    enabled: bool = True
+
+
 class TrackerConfig(BaseModel):
     """Wallet tracker configuration."""
 
@@ -40,6 +55,7 @@ class Config(BaseModel):
 
     polymarket: PolymarketConfig = PolymarketConfig()
     spot_feeds: SpotFeedConfig = SpotFeedConfig()
+    openbb: OpenBBConfig = OpenBBConfig()
     tracker: TrackerConfig = TrackerConfig()
     data_dir: Path = Path("data")
 
@@ -64,6 +80,15 @@ class Config(BaseModel):
             coinbase_ws_url=os.getenv("COINBASE_WS_URL", "wss://ws-feed.exchange.coinbase.com"),
         )
 
+        openbb = OpenBBConfig(
+            default_provider=os.getenv("OPENBB_PROVIDER", "yfinance"),
+            fmp_api_key=os.getenv("FMP_API_KEY"),
+            polygon_api_key=os.getenv("POLYGON_API_KEY"),
+            tiingo_api_key=os.getenv("TIINGO_API_KEY"),
+            poll_interval=int(os.getenv("OPENBB_POLL_INTERVAL", "10")),
+            enabled=os.getenv("OPENBB_ENABLED", "true").lower() == "true",
+        )
+
         tracker = TrackerConfig(
             poll_interval_seconds=int(os.getenv("POLL_INTERVAL_SECONDS", "30")),
             momentum_window_seconds=int(os.getenv("MOMENTUM_WINDOW_SECONDS", "15")),
@@ -72,6 +97,7 @@ class Config(BaseModel):
         return cls(
             polymarket=polymarket,
             spot_feeds=spot_feeds,
+            openbb=openbb,
             tracker=tracker,
         )
 
